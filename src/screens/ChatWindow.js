@@ -1,4 +1,14 @@
-import { View, Text, Image, Pressable, TextInput } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+} from "react-native";
 import React from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +26,26 @@ import { FontAwesome } from "@expo/vector-icons";
 const ChatWindow = () => {
   const route = useRoute();
   const navigation = useNavigation();
+
+  const screenHeight = Dimensions.get("window").height;
+
+  const bottomValue = screenHeight * 0.001;
+
+  const messages = [
+    { id: 1, content: "Hello! How are you ?", sender: "received" },
+    { id: 2, content: "Hi there! I am fine, what about u ?", sender: "sent" },
+  ];
+
+  const renderMessage = ({ item }) => (
+    <View
+      style={
+        item.sender === "sent" ? styles.sentMessage : styles.receivedMessage
+      }
+    >
+      <Text style={styles.messageText}>{item.content}</Text>
+    </View>
+  );
+
   return (
     <>
       <View className="bg-[#0e806a]" style={{ height: hp(15) }}>
@@ -43,31 +73,65 @@ const ChatWindow = () => {
           </View>
         </SafeAreaView>
       </View>
-      <View
-        style={{ flex: 1, justifyContent: "flex-end" }}
-        className="background"
-      >
-        <View className="flex-row items-center">
+      <View style={{ flex: 1 }} className="background">
+        <View className="mt-2">
+          <FlatList
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id.toString()}
+          />
+        </View>
+        <View
+          className="flex-row items-center w-full"
+          style={{ position: "absolute", bottom: bottomValue, flex: 1 }}
+        >
           <View className="bg-white rounded-3xl w-[82%] p-3 mb-1 ml-1 flex-row justify-between">
             <View className="flex-row items-center">
               <Fontisto name="smiley" size={24} color="gray" />
               <TextInput placeholder={"Message"} multiline className="ml-2" />
             </View>
             <View className="flex-row items-center space-x-5">
-              <Feather name="send" size={24} color="gray" />
+              <TouchableOpacity>
+                <Feather name="send" size={24} color="gray" />
+              </TouchableOpacity>
               <View className="rounded-full bg-gray-300 p-2">
                 <FontAwesome name="rupee" size={15} color="gray" />
               </View>
               <Entypo name="camera" size={24} color="gray" />
             </View>
           </View>
-          <View className='w-full ml-1'>
-              <Ionicons name="mic-circle" size={56} color="#0e806a" />
+          <View className="w-full ml-1">
+            <Ionicons name="mic-circle" size={56} color="#0e806a" />
           </View>
         </View>
       </View>
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  receivedMessage: {
+    padding: 12,
+    margin: 4,
+    borderRadius: 10,
+    backgroundColor: "lightblue",
+    alignSelf: "flex-start",
+    borderTopLeftRadius: 0,
+    marginLeft: 10,
+  },
+  sentMessage: {
+    padding: 12,
+    margin: 4,
+    borderRadius: 10,
+    backgroundColor: "lightgreen",
+    alignSelf: "flex-end",
+    borderTopRightRadius: 0,
+    marginRight: 10,
+  },
+  messageText: {
+    fontSize: 16,
+    color: "black",
+  },
+});
 
 export default ChatWindow;
