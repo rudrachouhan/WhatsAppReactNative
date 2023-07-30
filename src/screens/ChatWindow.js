@@ -9,7 +9,7 @@ import {
   Dimensions,
   FlatList,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -22,29 +22,69 @@ import { Entypo } from "@expo/vector-icons";
 import { Fontisto } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
+import { sortedId } from "../lib";
+import { io } from "socket.io-client";
 
 const ChatWindow = () => {
+  const socket = io('http://192.168.43.204:5000')
+  
+  const senderId = 'abc'
+  const receiverId = 'xyz'
+  
+  const [messages, setMessages] = useState([])
+  
+  
+  useEffect(() => {
+    fetch(`http://192.168.43.204:5000/chat/${sortedId(senderId, receiverId)}s`).then((data) => {
+      return data.json().then((data)=>{
+        setMessages(data)
+      })
+    })
+  }, [])
+
+  socket.on('receive message', ({message, sender}) => {
+    setMessages([...messages, { id: messages.length + 1, message: message, sender: sender }])
+  })
+  
+  const [messageInput, setMessageInput] = useState('')
+
   const route = useRoute();
   const navigation = useNavigation();
 
   const screenHeight = Dimensions.get("window").height;
-
   const bottomValue = screenHeight * 0.001;
-
-  const messages = [
-    { id: 1, content: "Hello! How are you ?", sender: "received" },
-    { id: 2, content: "Hi there! I am fine, what about u ?", sender: "sent" },
-  ];
 
   const renderMessage = ({ item }) => (
     <View
       style={
-        item.sender === "sent" ? styles.sentMessage : styles.receivedMessage
+        item.sender === senderId ? styles.sentMessage : styles.receivedMessage
       }
     >
-      <Text style={styles.messageText}>{item.content}</Text>
+      <Text style={styles.messageText}>{item.message}</Text>
     </View>
   );
+
+  const handleSend = async () => {
+    setMessages([...messages, { id: messages.length + 1, message: messageInput, sender: senderId }])
+    socket.emit('send message', {message: messageInput, sender: senderId})
+    try {
+        await fetch('http://192.168.43.204:5000/send', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          senderId,
+          receiverId,
+          message: messageInput
+        }),
+        })
+        setMessageInput('')
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
 
   return (
     <>
@@ -88,10 +128,15 @@ const ChatWindow = () => {
           <View className="bg-white rounded-3xl w-[82%] p-3 mb-1 ml-1 flex-row justify-between">
             <View className="flex-row items-center">
               <Fontisto name="smiley" size={24} color="gray" />
-              <TextInput placeholder={"Message"} multiline className="ml-2" />
+              <TextInput
+                placeholder={"Message"}
+                multiline className="ml-2"
+                onChangeText={setMessageInput}
+                value={messageInput}
+              />
             </View>
             <View className="flex-row items-center space-x-5">
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleSend}>
                 <Feather name="send" size={24} color="gray" />
               </TouchableOpacity>
               <View className="rounded-full bg-gray-300 p-2">
